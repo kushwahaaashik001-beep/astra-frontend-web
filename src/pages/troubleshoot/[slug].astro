@@ -1,0 +1,67 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { supabase } from '../../lib/supabase';
+import { generateSlug } from '../../utils/slugify';
+
+// 1. Astro ko batana ki kaun-kaun se pages banane hain (Build time par)
+export async function getStaticPaths() {
+  const { data: articles } = await supabase
+    .from('astra_data')
+    .select('keyword');
+
+  return articles.map((art) => ({
+    params: { slug: generateSlug(art.keyword) },
+    props: { keyword: art.keyword },
+  }));
+}
+
+// 2. Page ka data fetch karna
+const { slug } = Astro.params;
+const { keyword } = Astro.props;
+
+const { data: article } = await supabase
+  .from('astra_data')
+  .select('*')
+  .eq('keyword', keyword)
+  .single();
+
+if (!article) {
+  return Astro.redirect('/404');
+}
+---
+
+<MainLayout title={`${article.keyword} - Troubleshooting Manual`} description={article.content ? article.content.substring(0, 160) : ""}>
+  <article class="prose">
+    <nav class="breadcrumbs" style="font-size: 0.85rem; color: #666; margin-bottom: 1rem;">
+      <a href="/">Home</a> > <a href="#">Troubleshoot</a> > <span>{article.keyword}</span>
+    </nav>
+
+    <h1 style="font-size: 2.5rem; color: #1a1a1a; line-height: 1.2;">{article.keyword}</h1>
+    
+    <div class="meta" style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;">
+      <span>Manual Code: <strong>{article.id}</strong></span> | 
+      <span>Reliability Score: <strong>{article.score}%</strong></span>
+    </div>
+
+    <div class="content" style="line-height: 1.8; font-size: 1.1rem; color: #333;">
+      {article.content ? (
+        <div set:html={article.content} />
+      ) : (
+        <p>Technical documentation for this model is currently being synthesized...</p>
+      )}
+    </div>
+
+    <div style="margin-top: 4rem; padding: 2rem; background: #e7f3ff; border-radius: 12px; border: 1px solid #b3d7ff;">
+      <h3>Need Expert Help?</h3>
+      <p>If the steps above didn't solve the <strong>{article.keyword}</strong> issue, contact our technical team or check the manufacturer's official guide.</p>
+    </div>
+  </article>
+</MainLayout>
+
+<style>
+  .prose :global(h2) { font-size: 1.8rem; margin-top: 2rem; color: #004488; }
+  .prose :global(h3) { font-size: 1.4rem; margin-top: 1.5rem; }
+  .prose :global(ul) { padding-left: 1.5rem; margin-bottom: 1.5rem; }
+  .prose :global(li) { margin-bottom: 0.5rem; }
+  .prose :global(a) { color: #0066cc; text-decoration: underline; }
+</style>
