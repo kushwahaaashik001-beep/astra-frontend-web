@@ -1,0 +1,30 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { supabase } from '../lib/supabase';
+import { generateSlug } from '../utils/slugify';
+
+// Database se latest articles fetch karna
+const { data: articles, error } = await supabase
+  .from('astra_data')
+  .select('keyword, score, updated_at')
+  .order('updated_at', { ascending: false })
+  .limit(10);
+---
+
+<MainLayout title="Astra Troubleshooting | Industrial Manuals">
+	<section style="text-align: center; margin-bottom: 3rem;">
+		<h1>Technical Manuals & Repair Guides</h1>
+		<p>Search through our level-10 industrial database.</p>
+	</section>
+
+	<div class="article-grid" style="display: grid; gap: 1.5rem;">
+		{articles && articles.map((art) => (
+			<a href={`/troubleshoot/${generateSlug(art.keyword)}`} style="background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-decoration: none; color: inherit;">
+				<h2 style="margin: 0; font-size: 1.25rem; color: #0066cc;">{art.keyword}</h2>
+				<p style="color: #666; font-size: 0.9rem;">Manual Score: {art.score} | Last Updated: {new Date(art.updated_at).toLocaleDateString()}</p>
+			</a>
+		))}
+		
+		{!articles && <p>No articles found yet. Make sure your Synthesizer is working!</p>}
+	</div>
+</MainLayout>
